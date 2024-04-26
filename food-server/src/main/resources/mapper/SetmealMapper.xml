@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.food.mapper.SetmealMapper">
+    <update id="update">
+        update setmeal
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image =#{image},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into setmeal
+        (category_id, name, price, status, description, image, create_time, update_time, create_user, update_user)
+        values
+        (#{categoryId}, #{name}, #{price}, #{status}, #{description}, #{image}, #{createTime}, #{updateTime}, #{createUser}, #{updateUser})
+    </insert>
+    <!--套餐的分页查询-->
+    <select id="setmealPageQuery" resultType="com.food.vo.SetmealVO">
+        select s.*, c.name as categoryName from setmeal s
+        left join category c
+        on s.category_id = c.id
+        <where>
+            <if test="name != null and name != ''">
+                and s.name like concat('%', #{name}, '%')
+            </if>
+            <if test="categoryId != null and categoryId != 0">
+                and s.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and s.status = #{status}
+            </if>
+        </where>
+        order by s.create_time desc
+    </select>
+    <select id="getListById" resultType="setmeal">
+        select * from setmeal
+        where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <delete id="deleteBatchById">
+        delete from setmeal where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            (#{id})
+        </foreach>
+    </delete>
+    <select id="getWithDishById" resultMap="SetmealWithDishResultMap">
+        select s.*, sd.id sdId, setmeal_id, dish_id, sd.name sdName, sd.price sdPrice, copies from setmeal s
+        left join setmeal_dish sd
+        on s.id = sd.setmeal_id
+        where s.id = #{id}
+    </select>
+    <resultMap id="SetmealWithDishResultMap" type="com.food.vo.SetmealVO">
+        <id column="id" property="id"/>
+        <collection property="setmealDishes" ofType="com.food.entity.SetmealDish">
+            <id column="sdId" property="id"/>
+            <result column="sdName" property="name"/>
+            <result column="sdPrice" property="price"/>
+        </collection>
+    </resultMap>
+    <select id="list" resultType="setmeal">
+        select * from setmeal
+        <where>
+            <if test="categoryId != null and categoryId != 0">
+                and category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+    <select id="getDishItemBySetmealId" resultType="com.food.vo.DishItemVO">
+        select sd.name, d.description, sd.copies, d.image
+        from dish d
+        left join setmeal_dish sd
+        on d.id = sd.dish_id
+        where sd.setmeal_id = #{setmealId}
+    </select>
+</mapper>

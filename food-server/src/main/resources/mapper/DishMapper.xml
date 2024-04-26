@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.food.mapper.DishMapper">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into dish (name, category_id, price, image, description, status, create_time, update_time, create_user, update_user)
+        values
+        (#{name}, #{categoryId}, #{price}, #{image}, #{description}, #{status}, #{createTime}, #{updateTime}, #{createUser}, #{updateUser})
+    </insert>
+
+    <!--菜品的分页查询，多表查询-->
+    <select id="dishPageQuery" resultType="com.food.vo.DishVO">
+        select d.*, c.name as categoryName from dish d
+        left join category c
+        on d.category_id = c.id
+        <where>
+            <if test="name != null and name != ''">
+                and d.name like concat('%', #{name}, '%')
+            </if>
+            <if test="categoryId != null and categoryId != 0">
+                and d.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and d.status = #{status}
+            </if>
+        </where>
+        order by d.create_time desc
+    </select>
+
+    <select id="getByIdAndStatus" resultType="java.lang.Integer">
+        select count(id) from dish where status = #{enable} and id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            (#{id})
+        </foreach>
+    </select>
+    <delete id="deleteByIds">
+        delete from dish where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            (#{id})
+        </foreach>
+    </delete>
+
+    <select id="getByIdWithFlavor" resultMap="DishWithFlavorResultMap">
+        select d.*, df.id dfId, dish_id, df.name dfName, value from dish d
+        left join dish_flavor df
+        on d.id = df.dish_id
+        where d.id = #{id}
+    </select>
+    <resultMap id="DishWithFlavorResultMap" type="com.food.vo.DishVO">
+        <id column="id" property="id"/>
+        <collection property="flavors" ofType="com.food.entity.DishFlavor">
+            <id column="dfId" property="id"/>
+            <result column="dfName" property="name"/>
+        </collection>
+    </resultMap>
+
+    <update id="update">
+        update dish
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image =#{image},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <select id="getDishList" resultType="dish">
+        select * from dish
+        <where>
+            <if test="name != null">
+                and name ame like concat('%',#{name},'%')
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="getDishListBySetmealId" resultType="dish">
+        select d.*
+        from dish d
+        left join setmeal_dish sd
+        on d.id = sd.dish_id
+        where sd.setmeal_id = #{setmealId}
+    </select>
+    <!-- 通过分类id查询菜品以及对应的口味-->
+    <select id="getDishWithFlavor" resultMap="DishWithFlavorListResultMap">
+        select d.*, df.id dfId, dish_id, df.name dfName, value from dish d
+        left join dish_flavor df
+        on d.id = df.dish_id
+        <where>
+            <if test="categoryId != null">
+                and d.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and d.status = #{status}
+            </if>
+        </where>
+    </select>
+    <resultMap id="DishWithFlavorListResultMap" type="com.food.vo.DishVO">
+        <id column="id" property="id"/>
+        <collection property="flavors" ofType="com.food.entity.DishFlavor">
+            <id column="dfId" property="id"/>
+            <result column="dfName" property="name"/>
+        </collection>
+    </resultMap>
+</mapper>
